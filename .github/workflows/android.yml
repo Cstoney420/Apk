@@ -1,33 +1,47 @@
+
 name: Build Number Rush APK
 
 on:
-workflow_dispatch:
-push:
-branches: [main]
+  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
-build:
-runs-on: ubuntu-latest
-steps:
-- uses: actions/checkout@v4
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
 
-```
-  - uses: actions/setup-java@v4
-    with:
-      distribution: temurin
-      java-version: '17'
+    steps:
+      - name: Download project files
+        uses: actions/checkout@v4
 
-  - uses: android-actions/setup-android@v3
+      - name: Install Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
-  - uses: gradle/actions/setup-gradle@v4
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
 
-  - name: Build APK
-    run: |
-      chmod +x gradlew
-      ./gradlew assembleDebug
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
 
-  - uses: actions/upload-artifact@v4
-    with:
-      name: NumberRush-debug-apk
-      path: app/build/outputs/apk/debug/*.apk
-```
+      - name: Check project files
+        run: |
+          echo "Checking project files..."
+          ls -la
+          test -f gradlew || (echo "ERROR: gradlew is missing from the repository root" && exit 1)
+
+      - name: Build debug APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NumberRush-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
