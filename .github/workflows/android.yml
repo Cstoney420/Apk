@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - name: Download project files
+      - name: Download project
         uses: actions/checkout@v4
 
       - name: Install Java
@@ -21,24 +21,36 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Check Android SDK
+      - name: Arrange Android project
         run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-          ls -la "$ANDROID_HOME"
+          mkdir -p app/src/main/java/com/example/numberrush
+          mkdir -p app/src/main/assets
 
-      - name: Check project files
+          mv build.gradle app/build.gradle
+          mv AndroidManifest.xml app/src/main/AndroidManifest.xml
+          mv MainActivity.java app/src/main/java/com/example/numberrush/MainActivity.java
+          mv index.html app/src/main/assets/index.html
+
+          cat > build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application' version '8.6.1' apply false
+          }
+          EOF
+
+      - name: Install Android SDK packages
         run: |
-          ls -la
-          test -f gradlew || (echo "ERROR: gradlew is missing from the repository root" && exit 1)
+          yes | sdkmanager --licenses || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Create Gradle wrapper
+        run: |
+          curl -L https://services.gradle.org/distributions/gradle-8.7-bin.zip -o /tmp/gradle.zip
+          unzip -q /tmp/gradle.zip -d /tmp
+          /tmp/gradle-8.7/bin/gradle wrapper --gradle-version 8.7
+          chmod +x gradlew
 
       - name: Build APK
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleDebug
+        run: ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
